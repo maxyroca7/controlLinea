@@ -105,7 +105,8 @@
         <section class="round">
           <div class="round-head">
             <h2>Recorrida ${activa.numero}</h2>
-            <span>Iniciada ${esc(activa.inicio)} · ${hechas} de ${cfg.lineas.length} líneas</span>
+            <span>Iniciada ${esc(activa.inicio)} · ${hechas} de ${cfg.lineas.length} líneas
+              <button type="button" class="link" data-act="editar-rec" data-id="${activa.id}">Cambiar hora</button></span>
           </div>
           <div class="progress" aria-hidden="true"><i style="width:${pct}%"></i></div>
           <ul class="board">${tiles}</ul>
@@ -123,9 +124,15 @@
     // Registro del día agrupado por recorrida (la más reciente primero)
     const grupos = [...d.recorridas].reverse().map(r => {
       const cs = d.controles.filter(c => c.tipo === 'linea' && c.recorridaId === r.id).sort((a, b) => a.hora.localeCompare(b.hora));
-      const acciones = r.fin
-        ? `<button type="button" class="link" data-act="reabrir" data-id="${r.id}">Reabrir</button>`
-        : '';
+      const acciones = `<button type="button" class="link" data-act="editar-rec" data-id="${r.id}">Horarios</button>`
+        + (r.fin ? `<button type="button" class="link" data-act="reabrir" data-id="${r.id}">Reabrir</button>` : '');
+      // Líneas que quedaron sin cargar en una recorrida ya cerrada: se pueden agregar después.
+      const faltan = r.fin ? cfg.lineas.filter(l => !cs.some(c => c.linea === l)) : [];
+      const agregar = faltan.length ? `
+          <div class="log-add">
+            <span>Sin cargar:</span>
+            ${faltan.map(l => `<button type="button" class="btn btn-ghost btn-sm" data-act="agregar-linea" data-id="${r.id}" data-linea="${esc(l)}">+ ${esc(l)}</button>`).join('')}
+          </div>` : '';
       return `
         <div class="log-group">
           <div class="log-head">
@@ -135,6 +142,7 @@
             <button type="button" class="link link-danger" data-act="borrar-rec" data-id="${r.id}">Borrar</button>
           </div>
           ${cs.length ? `<ul class="log">${cs.map(filaControl).join('')}</ul>` : '<p class="muted">Sin controles cargados.</p>'}
+          ${agregar}
         </div>`;
     }).join('');
     html += `<section class="day-log"><h2>Registro de la jornada</h2>${grupos || '<p class="muted">Todavía no hay recorridas en esta jornada. Iniciá la primera cuando salgas a planta.</p>'}</section>`;
@@ -206,7 +214,7 @@
   }
 
   // ---------- Formulario (hoja inferior) ----------
-  function abrirForm({ tipo, linea = '', recorridaId = null, control = null }) {
+  function abrirForm({ tipo, linea = '', recorridaId = null, control = null, horaSugerida = null }) {
     const cfg = Store.getConfig();
     const c = control || {};
     const prev = !control && tipo === 'linea' ? Store.ultimoDeLinea(ui.fecha, linea) : null;
@@ -237,8 +245,9 @@
         <datalist id="dlProd">${productos}</datalist>
         <div class="row2">
           <label>Lote<input name="lote" value="${esc(lote)}" autocomplete="off" autocapitalize="characters"></label>
-          <label>Hora<input type="time" name="hora" value="${esc(c.hora || Store.horaActual())}"></label>
+          <label>Hora<input type="time" name="hora" value="${esc(c.hora || horaSugerida || Store.horaActual())}"></label>
         </div>
+        ${horaSugerida && !control ? '<p class="muted small">Cargando después: poné la hora real en que controlaste la línea.</p>' : ''}
 
         <fieldset class="seg">
           <legend>Resultado</legend>
@@ -276,6 +285,75 @@
     sheet.hidden = false;
     document.body.classList.add('sheet-open');
     setTimeout(() => { const first = form.querySelector('input[name="resultado"]:checked') || form.querySelector('input[name="resultado"]'); first?.focus({ preventScroll: true }); }, 50);
+  }
+
+  // Hoja de elección: la línea ya tiene control en la recorrida abierta.
+  // Botones grandes (no confirm()) para poder elegir con guantes.
+  function abrirEleccion(linea, r, c) {
+    const cfg = Store.getConfig();
+    const pend = cfg.lineas.filter(l => !Store.controlDeLinea(ui.fecha, r.id, l));
+    const sig = Store.getDia(ui.fecha).recorridas.length + 1;
+    sheet.innerHTML = `
+      <div class="sheet-backdrop" data-act="cerrar-sheet"></div>
+      <div class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+        <header class="sheet-head">
+          <div>
+            <h2 id="sheetTitle">${esc(linea)} ya está controlada</h2>
+            <small>Recorrida ${r.numero} · ${ESTADO_TXT[c.resultado]} · ${esc(c.hora)}</small>
+          </div>
+          <button type="button" class="icon-btn" data-act="cerrar-sheet" aria-label="Cerrar">✕</button>
+        </header>
+        <p>¿Arrancaste otra vuelta o querés corregir este control?</p>
+        ${pend.length ? `<p class="muted small">En la recorrida ${r.numero} quedan sin controlar: ${pend.map(esc).join(', ')}. Si empezás la siguiente, quedan como no controladas (después las podés agregar desde el registro).</p>` : ''}
+        <div class="choice">
+          <button type="button" class="btn btn-primary btn-block" data-act="nueva-rec-desde" data-linea="${esc(linea)}">Empezar recorrida ${sig} con ${esc(linea)}</button>
+          <button type="button" class="btn btn-ghost btn-block" data-act="corregir" data-id="${c.id}">Corregir el control de la recorrida ${r.numero}</button>
+        </div>
+      </div>`;
+    sheet.hidden = false;
+    document.body.classList.add('sheet-open');
+  }
+
+  // Hoja para corregir el horario de una recorrida (por ejemplo, si empezaste a cargar tarde).
+  function abrirFormRecorrida(id) {
+    const r = Store.getDia(ui.fecha).recorridas.find(x => x.id === id);
+    if (!r) return;
+    sheet.innerHTML = `
+      <div class="sheet-backdrop" data-act="cerrar-sheet"></div>
+      <form class="sheet-panel" id="formRec" novalidate role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+        <header class="sheet-head">
+          <div>
+            <h2 id="sheetTitle">Recorrida ${r.numero}</h2>
+            <small>Horarios reales, para el reporte</small>
+          </div>
+          <button type="button" class="icon-btn" data-act="cerrar-sheet" aria-label="Cerrar">✕</button>
+        </header>
+        <div class="row2">
+          <label>Inicio<input type="time" name="inicio" value="${esc(r.inicio)}" required></label>
+          ${r.fin
+            ? `<label>Fin<input type="time" name="fin" value="${esc(r.fin)}"></label>`
+            : '<p class="muted small">El fin se registra al cerrar la recorrida. Después lo podés corregir acá.</p>'}
+        </div>
+        <p class="muted small">La hora de cada línea se corrige tocando el control en el registro.</p>
+        <p class="form-error" id="formError" hidden></p>
+        <footer class="sheet-foot">
+          <button type="submit" class="btn btn-primary">Guardar horarios</button>
+        </footer>
+      </form>`;
+    const form = $('#formRec');
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const inicio = form.inicio.value;
+      const fin = form.fin ? form.fin.value : null;
+      const err = $('#formError', form);
+      if (!inicio) { err.textContent = 'Cargá la hora de inicio.'; err.hidden = false; return; }
+      // Fin antes que inicio solo tiene sentido si la recorrida cruzó la medianoche (turno noche).
+      if (fin && fin < inicio && !confirm(`El fin (${fin}) es anterior al inicio (${inicio}). ¿La recorrida cruzó la medianoche?`)) return;
+      Store.editarRecorrida(ui.fecha, id, fin ? { inicio, fin } : { inicio });
+      cerrarSheet(); render(); toast('Horarios guardados');
+    });
+    sheet.hidden = false;
+    document.body.classList.add('sheet-open');
   }
 
   function actualizarCampos(form) {
@@ -331,7 +409,8 @@
     render();
 
     // En recorrida: pasar directo a la siguiente línea pendiente.
-    if (tipo === 'linea' && eraNuevo) {
+    const recAbierta = Store.recorridaActiva(ui.fecha)?.id === control.recorridaId;
+    if (tipo === 'linea' && eraNuevo && recAbierta) {
       const rid = control.recorridaId;
       const lineas = Store.getConfig().lineas;
       const desde = lineas.indexOf(control.linea);
@@ -377,7 +456,26 @@
         const r = Store.recorridaActiva(ui.fecha);
         if (!r) return;
         const linea = el.dataset.linea;
-        abrirForm({ tipo: 'linea', linea, recorridaId: r.id, control: Store.controlDeLinea(ui.fecha, r.id, linea) });
+        const c = Store.controlDeLinea(ui.fecha, r.id, linea);
+        // Si la línea ya se controló en esta recorrida, lo más probable es que arrancó otra vuelta:
+        // preguntamos antes de pisar el control anterior.
+        if (c) abrirEleccion(linea, r, c);
+        else abrirForm({ tipo: 'linea', linea, recorridaId: r.id });
+        break;
+      }
+      case 'nueva-rec-desde': {
+        // Cierra la recorrida actual, abre la siguiente y carga la línea tocada como primera.
+        const actual = Store.recorridaActiva(ui.fecha);
+        if (actual) Store.cerrarRecorrida(ui.fecha, actual.id);
+        const nueva = Store.iniciarRecorrida(ui.fecha);
+        cerrarSheet(); render();
+        toast(`Recorrida ${nueva.numero} iniciada`);
+        abrirForm({ tipo: 'linea', linea: el.dataset.linea, recorridaId: nueva.id });
+        break;
+      }
+      case 'corregir': {
+        const c = buscarControl(id);
+        if (c) { cerrarSheet(); abrirForm({ tipo: c.tipo, linea: c.linea, recorridaId: c.recorridaId, control: c }); }
         break;
       }
       case 'cerrar-rec': {
@@ -387,6 +485,15 @@
         Store.cerrarRecorrida(ui.fecha, id);
         toast('Recorrida cerrada');
         render();
+        break;
+      }
+      case 'editar-rec':
+        abrirFormRecorrida(id);
+        break;
+      case 'agregar-linea': {
+        // Control que no se pudo cargar en el momento: se suma a la recorrida ya cerrada.
+        const r = Store.getDia(ui.fecha).recorridas.find(x => x.id === id);
+        if (r) abrirForm({ tipo: 'linea', linea: el.dataset.linea, recorridaId: r.id, horaSugerida: r.inicio });
         break;
       }
       case 'reabrir':

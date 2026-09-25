@@ -125,6 +125,18 @@ const Store = (() => {
     const r = d.recorridas.find(x => x.id === id);
     if (r) { r.fin = null; save(); }
   }
+  /**
+   * Corrige los horarios de una recorrida ya iniciada.
+   * Sirve cuando la cargaste tarde: el reporte usa estos horarios, no los del momento de carga.
+   * cambios = { inicio: 'HH:MM', fin: 'HH:MM' | null }. Si no viene 'fin', se deja como estaba.
+   */
+  function editarRecorrida(fecha, id, cambios) {
+    const r = dia(fecha).recorridas.find(x => x.id === id);
+    if (!r) return false;
+    if (cambios.inicio) r.inicio = cambios.inicio;
+    if ('fin' in cambios && r.fin) r.fin = cambios.fin || r.fin; // una recorrida cerrada no se reabre desde acá
+    return save();
+  }
   function borrarRecorrida(fecha, id) {
     const d = dia(fecha);
     d.controles = d.controles.filter(c => c.recorridaId !== id);
@@ -184,7 +196,7 @@ const Store = (() => {
     hoy, horaActual, uid,
     getConfig, setConfig,
     getDia, diasConDatos, setTurno,
-    recorridaActiva, iniciarRecorrida, cerrarRecorrida, reabrirRecorrida, borrarRecorrida,
+    recorridaActiva, iniciarRecorrida, cerrarRecorrida, reabrirRecorrida, editarRecorrida, borrarRecorrida,
     guardarControl, borrarControl, controlDeLinea, ultimoDeLinea, productosUsados,
     exportar, importar, borrarDia
   };

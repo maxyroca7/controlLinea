@@ -156,6 +156,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--brand); outline:
 .pill { display: inline-block; padding: 3px 9px; border-radius: 99px; font-size: .76rem; font-weight: 700; white-space: nowrap; }
 .pill-conforme { background: var(--ok-bg); color: var(--ok); }
 .pill-ajuste { background: var(--warn-bg); color: var(--warn); }
+.pill-reprocesado { background: var(--warn-bg); color: var(--warn); }
 .pill-no_conforme { background: var(--bad-bg); color: var(--bad); }
 .pill-sin_produccion { background: var(--off-bg); color: var(--off); }
 
@@ -191,6 +192,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--brand); outline:
 .seg-opt input:focus-visible + span { outline: 3px solid var(--brand); outline-offset: 2px; }
 .seg-conforme input:checked + span { background: var(--ok); border-color: var(--ok); color: #fff; }
 .seg-ajuste input:checked + span { background: var(--warn); border-color: var(--warn); color: #fff; }
+.seg-reprocesado input:checked + span { background: var(--warn); border-color: var(--warn); color: #fff; }
 .seg-no_conforme input:checked + span { background: var(--bad); border-color: var(--bad); color: #fff; }
 .seg-sin_produccion input:checked + span { background: var(--off); border-color: var(--off); color: #fff; }
 
@@ -301,6 +303,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--brand); outline:
 .r-bar-h { font-size: .72rem; color: var(--r-muted); }
 
 .r-event { border-left: 4px solid var(--warn); background: var(--warn-bg); border-radius: 0 var(--r-sm) var(--r-sm) 0; padding: 10px 12px; margin-top: 8px; break-inside: avoid; }
+.r-event-reprocesado { border-left-color: var(--warn); background: var(--warn-bg); }
 .r-event-no_conforme { border-left-color: var(--bad); background: var(--bad-bg); }
 .r-event header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
 .r-event-time { font-weight: 800; }

@@ -1,0 +1,17 @@
+{
+  "name": "Control de Línea",
+  "short_name": "Control Línea",
+  "description": "Registro de recorridas de control en línea y control final, con reporte gráfico del día.",
+  "lang": "es-AR",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#eef1f2",
+  "theme_color": "#0f5c6e",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

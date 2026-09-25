@@ -3,7 +3,7 @@
  * IMPORTANTE: cada vez que cambies un archivo, subí el número de VERSION para que los
  * celulares descarguen la versión nueva.
  */
-const VERSION = 'control-linea-v3';
+const VERSION = 'control-linea-v4';
 const ARCHIVOS = [
   './',
   './index.html',

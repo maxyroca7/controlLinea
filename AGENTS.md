@@ -17,7 +17,7 @@ Es una app **separada** de `informeCalidad` (repo `maxyroca7/informeCalidad`):
 3. Por cada línea marca: **Conforme**, **Ajuste en línea** o **Sin producción**.
 4. Si hubo ajuste, registra qué se detectó/ajustó y la **Relevancia del evento**
    (qué se evitó o corrigió + magnitud opcional en L, kg, unid., min…).
-5. Aparte, registra lotes terminados en **Control final** (Conforme / No conforme) antes del despacho.
+5. Aparte, registra lotes terminados en **Control final** (Conforme / Reprocesado / No conforme; reprocesado = tenía falla y la corrigió él mismo) antes del despacho.
 6. Al final del turno exporta el reporte (PDF vía imprimir) o comparte un resumen de texto.
 
 ## Reglas de producto (no romper)
@@ -56,7 +56,7 @@ Scripts clásicos (sin módulos, sin build, sin dependencias). Orden de carga en
       recorridas: [{ id, numero, inicio: 'HH:MM', fin: 'HH:MM' | null }],
       controles:  [{
         id, tipo: 'linea' | 'final', recorridaId, linea, producto, lote, hora,
-        resultado: 'conforme' | 'ajuste' | 'sin_produccion' | 'no_conforme',
+        resultado: 'conforme' | 'ajuste' | 'sin_produccion' | 'no_conforme' | 'reprocesado',
         detalle,
         relevancia: { descripcion, magnitud: number | null, unidad } | null
       }]

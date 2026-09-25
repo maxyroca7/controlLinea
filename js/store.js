@@ -18,7 +18,8 @@
  *   recorridaId (solo tipo 'linea'),
  *   linea, producto, lote, hora: 'HH:MM',
  *   resultado: 'conforme' | 'ajuste' | 'sin_produccion'   (tipo 'linea')
- *            | 'conforme' | 'no_conforme'                  (tipo 'final')
+ *            | 'conforme' | 'reprocesado' | 'no_conforme'  (tipo 'final')
+ *              reprocesado = tenía falla y el checker la corrigió antes del despacho
  *   detalle: texto (qué se detectó / qué se ajustó / observación),
  *   relevancia: { descripcion, magnitud: número|null, unidad } | null
  * }

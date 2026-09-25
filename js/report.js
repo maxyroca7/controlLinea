@@ -12,7 +12,8 @@ const Report = (() => {
     conforme: 'Conforme',
     ajuste: 'Ajuste en línea',
     sin_produccion: 'Sin producción',
-    no_conforme: 'No conforme'
+    no_conforme: 'No conforme',
+    reprocesado: 'Reprocesado'
   };
 
   /** Calcula todos los números del día. */
@@ -25,6 +26,8 @@ const Report = (() => {
     const ajustes = linea.filter(c => c.resultado === 'ajuste');
     const conformes = controlados.filter(c => c.resultado === 'conforme');
     const finalNC = final.filter(c => c.resultado === 'no_conforme');
+    // Reprocesado: el lote tenía una falla y el checker la corrigió antes del despacho.
+    const finalRep = final.filter(c => c.resultado === 'reprocesado');
 
     // Líneas: las configuradas + cualquier otra que aparezca en los datos.
     const lineas = [...cfg.lineas];
@@ -32,8 +35,8 @@ const Report = (() => {
 
     const lotes = new Set(controlados.map(c => `${c.linea}|${c.lote}`).filter(x => !x.endsWith('|')));
 
-    // Eventos relevantes: ajustes en línea + no conformes en control final.
-    const eventos = [...ajustes, ...finalNC].sort((a, b) => a.hora.localeCompare(b.hora));
+    // Eventos relevantes: ajustes en línea + no conformes y reprocesados en control final.
+    const eventos = [...ajustes, ...finalNC, ...finalRep].sort((a, b) => a.hora.localeCompare(b.hora));
 
     // Magnitud total por unidad.
     const magnitudes = {};
@@ -53,7 +56,7 @@ const Report = (() => {
     });
 
     return {
-      d, cfg, linea, final, controlados, ajustes, conformes, finalNC, lineas, lotes, eventos, magnitudes, porHora,
+      d, cfg, linea, final, controlados, ajustes, conformes, finalNC, finalRep, lineas, lotes, eventos, magnitudes, porHora,
       conformidad: controlados.length ? Math.round((conformes.length / controlados.length) * 100) : null
     };
   }
@@ -114,7 +117,8 @@ const Report = (() => {
     return x.eventos.map(e => {
       const r = e.relevancia || {};
       const mag = (r.magnitud != null && r.magnitud !== '') ? `<span class="r-mag">${fmtNum(r.magnitud)} ${esc(r.unidad || '')}</span>` : '';
-      const donde = e.tipo === 'final' ? 'Control final' : esc(e.linea);
+      const donde = e.tipo === 'final' ? 'Control final' + (e.linea ? ' · ' + esc(e.linea) : '') : esc(e.linea);
+      const titulo = { ajuste: 'Qué se ajustó', no_conforme: 'Qué no cumple', reprocesado: 'Falla y corrección' }[e.resultado] || 'Detalle';
       return `
         <article class="r-event r-event-${e.resultado}">
           <header>
@@ -123,7 +127,7 @@ const Report = (() => {
             <span class="r-event-lote">${esc(e.producto || '')}${e.lote ? ' · Lote ' + esc(e.lote) : ''}</span>
             ${mag}
           </header>
-          ${e.detalle ? `<p><b>${e.tipo === 'final' ? 'Qué no cumple' : 'Qué se ajustó'}:</b> ${esc(e.detalle)}</p>` : ''}
+          ${e.detalle ? `<p><b>${titulo}:</b> ${esc(e.detalle)}</p>` : ''}
           ${r.descripcion ? `<p><b>Relevancia del evento:</b> ${esc(r.descripcion)}</p>` : ''}
         </article>`;
     }).join('');
@@ -140,6 +144,14 @@ const Report = (() => {
         <td><span class="pill pill-${c.resultado}">${ETIQUETA[c.resultado]}</span></td>
       </tr>`).join('');
     return `<div class="r-scroll"><table class="r-table"><thead><tr><th>Hora</th><th>Producto</th><th>Lote</th><th>Línea</th><th>Resultado</th></tr></thead><tbody>${filas}</tbody></table></div>`;
+  }
+
+  /** Texto entre paréntesis del KPI de control final, p. ej. " (1 no conf., 1 reproc.)". */
+  function detalleFinal(x) {
+    const partes = [];
+    if (x.finalNC.length) partes.push(`${x.finalNC.length} no conf.`);
+    if (x.finalRep.length) partes.push(`${x.finalRep.length} reproc.`);
+    return partes.length ? ` (${partes.join(', ')})` : '';
   }
 
   function render(fecha) {
@@ -174,7 +186,7 @@ const Report = (() => {
         <div class="r-kpis">
           <div class="r-kpi"><strong>${x.lotes.size}</strong><span>lotes distintos</span></div>
           <div class="r-kpi r-kpi-warn"><strong>${x.ajustes.length}</strong><span>ajustes en línea</span></div>
-          <div class="r-kpi"><strong>${x.final.length}</strong><span>lotes en control final${x.finalNC.length ? ` (${x.finalNC.length} no conf.)` : ''}</span></div>
+          <div class="r-kpi"><strong>${x.final.length}</strong><span>lotes en control final${detalleFinal(x)}</span></div>
           <div class="r-kpi r-kpi-brand"><strong>${magTxt}</strong><span>magnitud de los eventos</span></div>
         </div>
         ${donut(x)}
@@ -217,7 +229,7 @@ const Report = (() => {
       `Control de línea ${fmtFecha(fecha)}${x.d.turno ? ' – Turno ' + x.d.turno : ''}`,
       `• ${x.d.recorridas.length} recorridas de planta, ${x.controlados.length} controles de lote en línea`,
       `• ${x.ajustes.length} ajustes en línea${x.conformidad != null ? ` (${x.conformidad}% conforme al primer control)` : ''}`,
-      `• Control final: ${x.final.length} lotes${x.finalNC.length ? `, ${x.finalNC.length} no conformes` : ''}`
+      `• Control final: ${x.final.length} lotes${x.finalNC.length ? `, ${x.finalNC.length} no conformes` : ''}${x.finalRep.length ? `, ${x.finalRep.length} reprocesados` : ''}`
     ];
     if (mags) lineas.push(`• Magnitud de los eventos: ${mags}`);
     x.eventos.forEach(e => {

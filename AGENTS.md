@@ -69,6 +69,8 @@ Scripts clásicos (sin módulos, sin build, sin dependencias). Orden de carga en
   recorrida con `Store.editarRecorrida`, hora de cada control desde su formulario, y las líneas
   que faltaron en una recorrida cerrada se agregan con "+ Línea" en el registro. El reporte
   (y el PDF) siempre se arma con estos datos: para corregir el PDF se corrigen los datos.
+- El reporte tiene la casilla "Incluir Control final" (por día, `dia.ocultarFinal`). Oculto =
+  el reporte lo ignora del todo; los datos no se borran.
 - Un control por línea por recorrida (se edita, no se duplica). Si se toca una línea ya
   controlada en la recorrida abierta, se pregunta: empezar la recorrida siguiente o corregir
   (el usuario llegó a pisar la vuelta 1 con datos de la vuelta 2 por no cerrarla).

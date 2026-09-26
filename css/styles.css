@@ -233,6 +233,9 @@ input:focus, select:focus, textarea:focus { border-color: var(--brand); outline:
 .report-tools { display: flex; flex-direction: column; gap: 10px; }
 .report-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .report-actions .btn { flex: 1; }
+/* Casilla grande (se toca con guantes) */
+label.check { display: flex; flex-direction: row; align-items: center; justify-content: flex-start; text-align: left; color: var(--ink); font-size: .95rem; gap: 12px; min-height: 48px; font-weight: 600; cursor: pointer; }
+label.check input { width: 26px; height: 26px; min-height: 0; margin: 0; accent-color: var(--brand); flex: none; }
 
 .report {
   --r-ink: #14212b; --r-muted: #5b6770; --r-line: #d6dde0;

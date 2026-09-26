@@ -7,6 +7,7 @@
  *   dias: {
  *     'AAAA-MM-DD': {
  *       turno: 'Mañana',
+ *       ocultarFinal: false,   // opcional: true = el reporte no muestra Control final
  *       recorridas: [ { id, numero, inicio: 'HH:MM', fin: 'HH:MM'|null } ],
  *       controles:  [ Control ]
  *     }
@@ -102,6 +103,12 @@ const Store = (() => {
       .sort().reverse();
   }
   function setTurno(fecha, turno) { dia(fecha).turno = turno; return save(); }
+  /**
+   * Oculta (o vuelve a mostrar) el Control final en el reporte de ese día.
+   * Los controles finales NO se borran: solo no se informan (p. ej. un día de muestreos).
+   * Campo opcional: los días viejos no lo tienen y se toman como "mostrar".
+   */
+  function setOcultarFinal(fecha, ocultar) { dia(fecha).ocultarFinal = !!ocultar; return save(); }
 
   // ---------- recorridas ----------
   function recorridaActiva(fecha) {
@@ -196,7 +203,7 @@ const Store = (() => {
   return {
     hoy, horaActual, uid,
     getConfig, setConfig,
-    getDia, diasConDatos, setTurno,
+    getDia, diasConDatos, setTurno, setOcultarFinal,
     recorridaActiva, iniciarRecorrida, cerrarRecorrida, reabrirRecorrida, editarRecorrida, borrarRecorrida,
     guardarControl, borrarControl, controlDeLinea, ultimoDeLinea, productosUsados,
     exportar, importar, borrarDia

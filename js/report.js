@@ -21,7 +21,10 @@ const Report = (() => {
     const d = Store.getDia(fecha);
     const cfg = Store.getConfig();
     const linea = d.controles.filter(c => c.tipo === 'linea');
-    const final = d.controles.filter(c => c.tipo === 'final').sort((a, b) => a.hora.localeCompare(b.hora));
+    // Si el checker ocultó el Control final para este día, el reporte lo ignora por completo
+    // (KPI, eventos, magnitudes, actividad por hora y tabla). Los datos siguen guardados.
+    const verFinal = !d.ocultarFinal;
+    const final = d.controles.filter(c => c.tipo === 'final' && verFinal).sort((a, b) => a.hora.localeCompare(b.hora));
     const controlados = linea.filter(c => c.resultado !== 'sin_produccion');
     const ajustes = linea.filter(c => c.resultado === 'ajuste');
     const conformes = controlados.filter(c => c.resultado === 'conforme');
@@ -50,13 +53,13 @@ const Report = (() => {
 
     // Actividad por hora (controles en línea + finales).
     const porHora = {};
-    d.controles.forEach(c => {
+    [...linea, ...final].forEach(c => {
       const h = parseInt((c.hora || '').slice(0, 2), 10);
       if (!isNaN(h)) porHora[h] = (porHora[h] || 0) + 1;
     });
 
     return {
-      d, cfg, linea, final, controlados, ajustes, conformes, finalNC, finalRep, lineas, lotes, eventos, magnitudes, porHora,
+      d, cfg, verFinal, linea, final, controlados, ajustes, conformes, finalNC, finalRep, lineas, lotes, eventos, magnitudes, porHora,
       conformidad: controlados.length ? Math.round((conformes.length / controlados.length) * 100) : null
     };
   }
@@ -113,7 +116,7 @@ const Report = (() => {
   }
 
   function eventos(x) {
-    if (!x.eventos.length) return '<p class="r-empty">Sin ajustes ni no conformidades en el día.</p>';
+    if (!x.eventos.length) return `<p class="r-empty">${x.verFinal ? 'Sin ajustes ni no conformidades en el día.' : 'Sin ajustes en línea en el día.'}</p>`;
     return x.eventos.map(e => {
       const r = e.relevancia || {};
       const mag = (r.magnitud != null && r.magnitud !== '') ? `<span class="r-mag">${fmtNum(r.magnitud)} ${esc(r.unidad || '')}</span>` : '';
@@ -186,7 +189,7 @@ const Report = (() => {
         <div class="r-kpis">
           <div class="r-kpi"><strong>${x.lotes.size}</strong><span>lotes distintos</span></div>
           <div class="r-kpi r-kpi-warn"><strong>${x.ajustes.length}</strong><span>ajustes en línea</span></div>
-          <div class="r-kpi"><strong>${x.final.length}</strong><span>lotes en control final${detalleFinal(x)}</span></div>
+          ${x.verFinal ? `<div class="r-kpi"><strong>${x.final.length}</strong><span>lotes en control final${detalleFinal(x)}</span></div>` : ''}
           <div class="r-kpi r-kpi-brand"><strong>${magTxt}</strong><span>magnitud de los eventos</span></div>
         </div>
         ${donut(x)}
@@ -209,10 +212,10 @@ const Report = (() => {
         ${eventos(x)}
       </section>
 
-      <section class="r-sec">
+      ${x.verFinal ? `<section class="r-sec">
         <h2>Control final</h2>
         ${finalTabla(x)}
-      </section>
+      </section>` : ''}
 
       <footer class="r-foot">
         <span>${doc.codigo ? esc(doc.codigo) + (doc.revision ? ' Rev. ' + esc(doc.revision) : '') : ''}</span>
@@ -229,8 +232,8 @@ const Report = (() => {
       `Control de línea ${fmtFecha(fecha)}${x.d.turno ? ' – Turno ' + x.d.turno : ''}`,
       `• ${x.d.recorridas.length} recorridas de planta, ${x.controlados.length} controles de lote en línea`,
       `• ${x.ajustes.length} ajustes en línea${x.conformidad != null ? ` (${x.conformidad}% conforme al primer control)` : ''}`,
-      `• Control final: ${x.final.length} lotes${x.finalNC.length ? `, ${x.finalNC.length} no conformes` : ''}${x.finalRep.length ? `, ${x.finalRep.length} reprocesados` : ''}`
-    ];
+      x.verFinal && `• Control final: ${x.final.length} lotes${x.finalNC.length ? `, ${x.finalNC.length} no conformes` : ''}${x.finalRep.length ? `, ${x.finalRep.length} reprocesados` : ''}`
+    ].filter(Boolean);
     if (mags) lineas.push(`• Magnitud de los eventos: ${mags}`);
     x.eventos.forEach(e => {
       const r = e.relevancia || {};

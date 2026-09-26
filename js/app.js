@@ -188,6 +188,10 @@
           <button type="button" class="btn btn-primary" data-act="imprimir">Exportar PDF</button>
           <button type="button" class="btn btn-ghost" data-act="compartir">Compartir resumen</button>
         </div>
+        <label class="check">
+          <input type="checkbox" id="inVerFinal" ${Store.getDia(ui.reporteFecha).ocultarFinal ? '' : 'checked'}>
+          <span>Incluir Control final en este reporte</span>
+        </label>
         <p class="muted small">Exportar PDF abre la ventana de impresión: elegí “Guardar como PDF”.</p>
       </section>
       ${Report.render(ui.reporteFecha)}`;
@@ -550,6 +554,8 @@
     if (t.id === 'inFecha' && t.value) { ui.fecha = t.value; render(); }
     else if (t.id === 'inTurno') { Store.setTurno(ui.fecha, t.value); }
     else if (t.id === 'inRepFecha') { ui.reporteFecha = t.value; render(); }
+    // Se guarda por día: el PDF de esa jornada siempre sale igual.
+    else if (t.id === 'inVerFinal') { Store.setOcultarFinal(ui.reporteFecha, !t.checked); render(); }
     else if (t.id === 'inImport' && t.files[0]) {
       const reader = new FileReader();
       reader.onload = () => {

@@ -13,7 +13,8 @@ const Report = (() => {
     ajuste: 'Ajuste en línea',
     sin_produccion: 'Sin producción',
     no_conforme: 'No conforme',
-    reprocesado: 'Reprocesado'
+    reprocesado: 'Reprocesado',
+    parcial: 'Parcialmente conforme'
   };
 
   /** Calcula todos los números del día. */
@@ -33,6 +34,8 @@ const Report = (() => {
     const finalNC = final.filter(c => c.resultado === 'no_conforme');
     // Reprocesado: el lote tenía una falla y el checker la corrigió antes del despacho.
     const finalRep = final.filter(c => c.resultado === 'reprocesado');
+    // Parcial: algunos pallets del lote están OK y otros no.
+    const finalPar = final.filter(c => c.resultado === 'parcial');
 
     // Líneas: las configuradas + cualquier otra que aparezca en los datos.
     const lineas = [...cfg.lineas];
@@ -41,7 +44,7 @@ const Report = (() => {
     const lotes = new Set(controlados.map(c => `${c.linea}|${c.lote}`).filter(x => !x.endsWith('|')));
 
     // Eventos relevantes: ajustes en línea + no conformes y reprocesados en control final.
-    const eventos = [...ajustes, ...finalNC, ...finalRep].sort((a, b) => a.hora.localeCompare(b.hora));
+    const eventos = [...ajustes, ...finalNC, ...finalRep, ...finalPar].sort((a, b) => a.hora.localeCompare(b.hora));
 
     // Magnitud total por unidad.
     const magnitudes = {};
@@ -61,7 +64,7 @@ const Report = (() => {
     });
 
     return {
-      d, cfg, verFinal, linea, final, controlados, ajustes, conformes, finalNC, finalRep, lineas, lotes, eventos, magnitudes, porHora,
+      d, cfg, verFinal, linea, final, controlados, ajustes, conformes, finalNC, finalRep, finalPar, lineas, lotes, eventos, magnitudes, porHora,
       conformidad: controlados.length ? Math.round((conformes.length / controlados.length) * 100) : null
     };
   }
@@ -123,7 +126,7 @@ const Report = (() => {
       const r = e.relevancia || {};
       const mag = (r.magnitud != null && r.magnitud !== '') ? `<span class="r-mag">${fmtNum(r.magnitud)} ${esc(r.unidad || '')}</span>` : '';
       const donde = e.tipo === 'final' ? 'Control final' + (e.linea ? ' · ' + esc(e.linea) : '') : esc(e.linea);
-      const titulo = { ajuste: 'Qué se ajustó', no_conforme: 'Qué no cumple', reprocesado: 'Falla y corrección' }[e.resultado] || 'Detalle';
+      const titulo = { ajuste: 'Qué se ajustó', no_conforme: 'Qué no cumple', reprocesado: 'Falla y corrección', parcial: 'Pallets no OK' }[e.resultado] || 'Detalle';
       return `
         <article class="r-event r-event-${e.resultado}">
           <header>
@@ -156,6 +159,7 @@ const Report = (() => {
     const partes = [];
     if (x.finalNC.length) partes.push(`${x.finalNC.length} no conf.`);
     if (x.finalRep.length) partes.push(`${x.finalRep.length} reproc.`);
+    if (x.finalPar.length) partes.push(`${x.finalPar.length} parcial${x.finalPar.length === 1 ? '' : 'es'}`);
     return partes.length ? ` (${partes.join(', ')})` : '';
   }
 
@@ -234,7 +238,7 @@ const Report = (() => {
       `Control de línea ${fmtFecha(fecha)}${x.d.turno ? ' – Turno ' + x.d.turno : ''}`,
       `• ${x.d.recorridas.length} recorridas de planta, ${x.controlados.length} controles de lote en línea`,
       `• ${x.ajustes.length} ajustes en línea${x.conformidad != null ? ` (${x.conformidad}% conforme al primer control)` : ''}`,
-      x.verFinal && `• Control final: ${x.final.length} lotes${x.finalNC.length ? `, ${x.finalNC.length} no conformes` : ''}${x.finalRep.length ? `, ${x.finalRep.length} reprocesados` : ''}`
+      x.verFinal && `• Control final: ${x.final.length} lotes${x.finalNC.length ? `, ${x.finalNC.length} no conformes` : ''}${x.finalRep.length ? `, ${x.finalRep.length} reprocesados` : ''}${x.finalPar.length ? `, ${x.finalPar.length} parcialmente conformes` : ''}`
     ].filter(Boolean);
     if (mags) lineas.push(`• Magnitud de los eventos: ${mags}`);
     x.eventos.forEach(e => {

@@ -19,7 +19,8 @@
  *   recorridaId (solo tipo 'linea'),
  *   linea, producto, lote, hora: 'HH:MM',
  *   resultado: 'conforme' | 'ajuste' | 'sin_produccion'   (tipo 'linea')
- *            | 'conforme' | 'reprocesado' | 'no_conforme'  (tipo 'final')
+ *            | 'conforme' | 'parcial' | 'reprocesado' | 'no_conforme'  (tipo 'final')
+ *              parcial = algunos pallets del lote están OK y otros no (el detalle dice cuáles)
  *              reprocesado = tenía falla y el checker la corrigió antes del despacho
  *   excluir: true si NO debe contarse en el reporte (opcional, por defecto se incluye),
  *   detalle: texto (qué se detectó / qué se ajustó / observación),

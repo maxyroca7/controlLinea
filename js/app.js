@@ -37,10 +37,10 @@
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => { t.hidden = true; }, 2600);
   }
-  const ESTADO_TXT = { conforme: 'Conforme', ajuste: 'Ajuste', sin_produccion: 'Sin producción', no_conforme: 'No conforme', reprocesado: 'Reprocesado' };
+  const ESTADO_TXT = { conforme: 'Conforme', ajuste: 'Ajuste', sin_produccion: 'Sin producción', no_conforme: 'No conforme', reprocesado: 'Reprocesado', parcial: 'Parcial' };
 
   // Resultados que cuentan como evento (piden detalle y relevancia).
-  const ES_EVENTO = ['ajuste', 'no_conforme', 'reprocesado'];
+  const ES_EVENTO = ['ajuste', 'no_conforme', 'reprocesado', 'parcial'];
 
   function topStatus() {
     const r = Store.recorridaActiva(ui.fecha);
@@ -159,11 +159,12 @@
     const fin = d.controles.filter(c => c.tipo === 'final').sort((a, b) => b.hora.localeCompare(a.hora));
     const nc = fin.filter(c => c.resultado === 'no_conforme').length;
     const rp = fin.filter(c => c.resultado === 'reprocesado').length;
+    const pa = fin.filter(c => c.resultado === 'parcial').length;
     view.innerHTML = `
       ${cabeceraJornada()}
       <section class="start">
         <button type="button" class="btn btn-primary btn-xl" data-act="nuevo-final">Registrar lote en control final</button>
-        <p>${fin.length ? `${fin.length} lote${fin.length === 1 ? '' : 's'} registrado${fin.length === 1 ? '' : 's'}${nc ? `, ${nc} no conforme${nc === 1 ? '' : 's'}` : ''}${rp ? `, ${rp} reprocesado${rp === 1 ? '' : 's'}` : ''}.` : 'Registrá cada lote terminado que verifiques antes del despacho.'}</p>
+        <p>${fin.length ? `${fin.length} lote${fin.length === 1 ? '' : 's'} registrado${fin.length === 1 ? '' : 's'}${nc ? `, ${nc} no conforme${nc === 1 ? '' : 's'}` : ''}${rp ? `, ${rp} reprocesado${rp === 1 ? '' : 's'}` : ''}${pa ? `, ${pa} parcial${pa === 1 ? '' : 'es'}` : ''}.` : 'Registrá cada lote terminado que verifiques antes del despacho.'}</p>
       </section>
       <section class="day-log">
         <h2>Lotes de la jornada</h2>
@@ -231,7 +232,7 @@
     const rec = recorridaId ? Store.getDia(ui.fecha).recorridas.find(r => r.id === recorridaId) : null;
     const resultados = tipo === 'linea'
       ? [['conforme', 'Conforme'], ['ajuste', 'Ajuste en línea'], ['sin_produccion', 'Sin producción']]
-      : [['conforme', 'Conforme'], ['reprocesado', 'Reprocesado'], ['no_conforme', 'No conforme']];
+      : [['conforme', 'Conforme'], ['parcial', 'Parcial'], ['reprocesado', 'Reprocesado'], ['no_conforme', 'No conforme']];
     const r = c.relevancia || {};
     const unidades = cfg.unidades.map(u => `<option ${u === r.unidad ? 'selected' : ''}>${esc(u)}</option>`).join('');
     const productos = Store.productosUsados().map(p => `<option value="${esc(p)}">`).join('');
@@ -374,6 +375,7 @@
       ajuste: '¿Qué se detectó y qué se ajustó?',
       no_conforme: '¿Qué no cumple?',
       reprocesado: '¿Qué falla tenía y cómo la corregiste?',
+      parcial: '¿Qué pallets no están OK y por qué?',
       sin_produccion: 'Motivo (opcional)',
       conforme: 'Observación (opcional)'
     }[res] || 'Detalle';
@@ -396,7 +398,7 @@
     const falta = [];
     if (!res) falta.push('elegí el resultado');
     if (res && res !== 'sin_produccion' && !form.lote.value.trim()) falta.push('cargá el lote');
-    if (ES_EVENTO.includes(res) && !form.detalle.value.trim()) falta.push({ ajuste: 'describí qué se ajustó', no_conforme: 'describí qué no cumple', reprocesado: 'describí la falla y la corrección' }[res]);
+    if (ES_EVENTO.includes(res) && !form.detalle.value.trim()) falta.push({ ajuste: 'describí qué se ajustó', no_conforme: 'describí qué no cumple', reprocesado: 'describí la falla y la corrección', parcial: 'indicá qué pallets no están OK' }[res]);
     if (falta.length) { err.textContent = 'Para guardar: ' + falta.join(', ') + '.'; err.hidden = false; return; }
 
     const evento = ES_EVENTO.includes(res);

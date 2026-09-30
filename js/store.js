@@ -21,6 +21,7 @@
  *   resultado: 'conforme' | 'ajuste' | 'sin_produccion'   (tipo 'linea')
  *            | 'conforme' | 'reprocesado' | 'no_conforme'  (tipo 'final')
  *              reprocesado = tenía falla y el checker la corrigió antes del despacho
+ *   excluir: true si NO debe contarse en el reporte (opcional, por defecto se incluye),
  *   detalle: texto (qué se detectó / qué se ajustó / observación),
  *   relevancia: { descripcion, magnitud: número|null, unidad } | null
  * }

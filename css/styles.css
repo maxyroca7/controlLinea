@@ -88,6 +88,8 @@ textarea { min-height: 0; resize: vertical; }
 input:focus, select:focus, textarea:focus { border-color: var(--brand); outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 25%, transparent); }
 .row2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .dim { opacity: .45; }
+.check { flex-direction: row; align-items: center; gap: 12px; min-height: 48px; font-size: 1rem; color: var(--ink); cursor: pointer; }
+.check input { width: 26px; height: 26px; min-height: 0; flex: none; accent-color: var(--brand); }
 
 /* ===== Botones ===== */
 .btn {
@@ -158,6 +160,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--brand); outline:
 .pill-ajuste { background: var(--warn-bg); color: var(--warn); }
 .pill-reprocesado { background: var(--warn-bg); color: var(--warn); }
 .pill-no_conforme { background: var(--bad-bg); color: var(--bad); }
+.pill-off { background: var(--off-bg); color: var(--off); margin-left: 6px; }
 .pill-sin_produccion { background: var(--off-bg); color: var(--off); }
 
 /* ===== Hoja del formulario ===== */

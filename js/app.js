@@ -76,7 +76,7 @@
         <button type="button" class="log-row" data-act="editar" data-id="${c.id}">
           <span class="log-time">${esc(c.hora)}</span>
           <span class="log-main"><strong>${esc(c.tipo === 'final' ? (c.linea ? 'Final · ' + c.linea : 'Control final') : c.linea)}</strong><small>${info || '—'}</small></span>
-          <span class="pill pill-${c.resultado}">${ESTADO_TXT[c.resultado]}${mag}</span>
+          <span class="pill pill-${c.resultado}">${ESTADO_TXT[c.resultado]}${mag}</span>${c.excluir ? '<span class="pill pill-off" title="No se cuenta en el reporte">Fuera del reporte</span>' : ''}
         </button>
       </li>`;
   }
@@ -274,6 +274,8 @@
           </div>
         </fieldset>
 
+        <label class="check"><input type="checkbox" name="incluir" ${c.excluir ? '' : 'checked'}><span>Incluir en el reporte</span></label>
+
         <p class="form-error" id="formError" hidden></p>
 
         <footer class="sheet-foot">
@@ -408,6 +410,7 @@
       lote: form.lote.value.trim(),
       hora: form.hora.value || Store.horaActual(),
       resultado: res,
+      excluir: !form.incluir.checked,
       detalle: form.detalle.value.trim(),
       relevancia: evento ? { descripcion: form.relDesc.value.trim(), magnitud: mag === '' ? null : Number(mag), unidad: form.relUni.value } : null
     };

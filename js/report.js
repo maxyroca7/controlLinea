@@ -18,7 +18,9 @@ const Report = (() => {
 
   /** Calcula todos los números del día. */
   function calcular(fecha) {
-    const d = Store.getDia(fecha);
+    const dia = Store.getDia(fecha);
+    // Los controles marcados "no incluir en reporte" no cuentan en nada (KPIs, tablero, eventos, horas).
+    const d = { ...dia, controles: dia.controles.filter(c => !c.excluir) };
     const cfg = Store.getConfig();
     const linea = d.controles.filter(c => c.tipo === 'linea');
     // Si el checker ocultó el Control final para este día, el reporte lo ignora por completo

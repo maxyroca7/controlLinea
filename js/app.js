@@ -129,6 +129,7 @@
     const grupos = [...d.recorridas].reverse().map(r => {
       const cs = d.controles.filter(c => c.tipo === 'linea' && c.recorridaId === r.id).sort((a, b) => a.hora.localeCompare(b.hora));
       const acciones = `<button type="button" class="link" data-act="editar-rec" data-id="${r.id}">Horarios</button>`
+        + `<button type="button" class="link" data-act="clonar-rec" data-id="${r.id}">Clonar</button>`
         + (r.fin ? `<button type="button" class="link" data-act="reabrir" data-id="${r.id}">Reabrir</button>` : '');
       // Líneas que quedaron sin cargar en una recorrida ya cerrada: se pueden agregar después.
       const faltan = r.fin ? cfg.lineas.filter(l => !cs.some(c => c.linea === l)) : [];
@@ -338,10 +339,12 @@
         <header class="sheet-head">
           <div>
             <h2 id="sheetTitle">Recorrida ${r.numero}</h2>
-            <small>Horarios reales, para el reporte</small>
+            <small>Número y horarios reales, para el reporte</small>
           </div>
           <button type="button" class="icon-btn" data-act="cerrar-sheet" aria-label="Cerrar">✕</button>
         </header>
+        <label>Número de recorrida<input type="number" name="numero" min="1" max="${Store.getDia(ui.fecha).recorridas.length}" step="1" inputmode="numeric" value="${r.numero}"></label>
+        <p class="muted small">Al cambiarlo, las demás se renumeran solas.</p>
         <div class="row2">
           <label>Inicio<input type="time" name="inicio" value="${esc(r.inicio)}" required></label>
           ${r.fin
@@ -351,7 +354,7 @@
         <p class="muted small">La hora de cada línea se corrige tocando el control en el registro.</p>
         <p class="form-error" id="formError" hidden></p>
         <footer class="sheet-foot">
-          <button type="submit" class="btn btn-primary">Guardar horarios</button>
+          <button type="submit" class="btn btn-primary">Guardar</button>
         </footer>
       </form>`;
     const form = $('#formRec');
@@ -363,8 +366,9 @@
       if (!inicio) { err.textContent = 'Cargá la hora de inicio.'; err.hidden = false; return; }
       // Fin antes que inicio solo tiene sentido si la recorrida cruzó la medianoche (turno noche).
       if (fin && fin < inicio && !confirm(`El fin (${fin}) es anterior al inicio (${inicio}). ¿La recorrida cruzó la medianoche?`)) return;
-      Store.editarRecorrida(ui.fecha, id, fin ? { inicio, fin } : { inicio });
-      cerrarSheet(); render(); toast('Horarios guardados');
+      const numero = parseInt(form.numero.value, 10) || r.numero;
+      Store.editarRecorrida(ui.fecha, id, fin ? { inicio, fin, numero } : { inicio, numero });
+      cerrarSheet(); render(); toast('Recorrida guardada');
     });
     sheet.hidden = false;
     document.body.classList.add('sheet-open');
@@ -511,6 +515,15 @@
       case 'editar-rec':
         abrirFormRecorrida(id);
         break;
+      case 'clonar-rec': {
+        const copia = Store.clonarRecorrida(ui.fecha, id);
+        if (copia) {
+          render();
+          toast(`Clonada como recorrida ${copia.numero}. Corregí sus horarios y controles.`);
+          abrirFormRecorrida(copia.id);
+        }
+        break;
+      }
       case 'agregar-linea': {
         // Control que no se pudo cargar en el momento: se suma a la recorrida ya cerrada.
         const r = Store.getDia(ui.fecha).recorridas.find(x => x.id === id);

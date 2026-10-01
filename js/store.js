@@ -142,11 +142,45 @@ const Store = (() => {
    * cambios = { inicio: 'HH:MM', fin: 'HH:MM' | null }. Si no viene 'fin', se deja como estaba.
    */
   function editarRecorrida(fecha, id, cambios) {
-    const r = dia(fecha).recorridas.find(x => x.id === id);
+    const d = dia(fecha);
+    const r = d.recorridas.find(x => x.id === id);
     if (!r) return false;
+    // Cambiar el número = mover la recorrida a esa posición y renumerar todas (queda 1..n sin huecos ni repetidas).
+    if (cambios.numero && cambios.numero !== r.numero) {
+      const destino = Math.min(Math.max(cambios.numero, 1), d.recorridas.length);
+      d.recorridas = d.recorridas.filter(x => x.id !== id);
+      d.recorridas.splice(destino - 1, 0, r);
+      d.recorridas.forEach((x, i) => { x.numero = i + 1; });
+    }
     if (cambios.inicio) r.inicio = cambios.inicio;
     if ('fin' in cambios && r.fin) r.fin = cambios.fin || r.fin; // una recorrida cerrada no se reabre desde acá
     return save();
+  }
+  /**
+   * Clona una recorrida para cubrir una que se olvidó registrar.
+   * La copia queda cerrada, justo después de la original (las siguientes se renumeran) y con los
+   * mismos horarios, líneas, productos y lotes para después editarlos.
+   * No se copian los ajustes ni su relevancia (si no, el reporte contaría dos veces el mismo evento):
+   * los 'ajuste' pasan a 'conforme', y el detalle queda vacío.
+   */
+  function clonarRecorrida(fecha, id) {
+    const d = dia(fecha);
+    const i = d.recorridas.findIndex(x => x.id === id);
+    if (i < 0) return null;
+    const orig = d.recorridas[i];
+    const copia = { id: uid(), numero: 0, inicio: orig.inicio, fin: orig.fin || horaActual() };
+    d.recorridas.splice(i + 1, 0, copia);
+    d.recorridas.forEach((x, n) => { x.numero = n + 1; });
+    d.controles.filter(c => c.tipo === 'linea' && c.recorridaId === id).forEach(c => {
+      d.controles.push({
+        id: uid(), tipo: 'linea', recorridaId: copia.id, linea: c.linea,
+        producto: c.producto, lote: c.lote, hora: c.hora,
+        resultado: c.resultado === 'ajuste' ? 'conforme' : c.resultado,
+        detalle: '', relevancia: null
+      });
+    });
+    save();
+    return copia;
   }
   function borrarRecorrida(fecha, id) {
     const d = dia(fecha);
@@ -207,7 +241,7 @@ const Store = (() => {
     hoy, horaActual, uid,
     getConfig, setConfig,
     getDia, diasConDatos, setTurno, setOcultarFinal,
-    recorridaActiva, iniciarRecorrida, cerrarRecorrida, reabrirRecorrida, editarRecorrida, borrarRecorrida,
+    recorridaActiva, iniciarRecorrida, cerrarRecorrida, reabrirRecorrida, editarRecorrida, clonarRecorrida, borrarRecorrida,
     guardarControl, borrarControl, controlDeLinea, ultimoDeLinea, productosUsados,
     exportar, importar, borrarDia
   };

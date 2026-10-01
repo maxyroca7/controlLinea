@@ -21,6 +21,7 @@
  *   resultado: 'conforme' | 'ajuste' | 'sin_produccion'   (tipo 'linea')
  *            | 'conforme' | 'parcial' | 'reprocesado' | 'no_conforme'  (tipo 'final')
  *              parcial = algunos pallets del lote están OK y otros no (el detalle dice cuáles)
+ *   palletsNoOk: entero ≥ 1, solo cuando resultado = 'parcial' (cantidad de pallets no OK)
  *              reprocesado = tenía falla y el checker la corrigió antes del despacho
  *   excluir: true si NO debe contarse en el reporte (opcional, por defecto se incluye),
  *   detalle: texto (qué se detectó / qué se ajustó / observación),

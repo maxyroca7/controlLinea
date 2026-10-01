@@ -120,6 +120,9 @@ const Report = (() => {
     return `<div class="r-donut" style="--p:${p}"><div><strong>${p}%</strong><span>conformes al primer control</span></div></div>`;
   }
 
+  /** Texto "3 pallets no OK" para un control parcial ('' si no aplica). */
+  const txtPallets = c => (c.resultado === 'parcial' && c.palletsNoOk) ? `${c.palletsNoOk} pallet${c.palletsNoOk === 1 ? '' : 's'} no OK` : '';
+
   function eventos(x) {
     if (!x.eventos.length) return `<p class="r-empty">${x.verFinal ? 'Sin ajustes ni no conformidades en el día.' : 'Sin ajustes en línea en el día.'}</p>`;
     return x.eventos.map(e => {
@@ -132,6 +135,7 @@ const Report = (() => {
           <header>
             <span class="r-event-time">${esc(e.hora)}</span>
             <strong>${donde}</strong>
+            ${txtPallets(e) ? `<span class="r-mag">${txtPallets(e)}</span>` : ''}
             <span class="r-event-lote">${esc(e.producto || '')}${e.lote ? ' · Lote ' + esc(e.lote) : ''}</span>
             ${mag}
           </header>
@@ -149,7 +153,7 @@ const Report = (() => {
         <td>${esc(c.producto || '—')}</td>
         <td>${esc(c.lote || '—')}</td>
         <td>${esc(c.linea || '—')}</td>
-        <td><span class="pill pill-${c.resultado}">${ETIQUETA[c.resultado]}</span></td>
+        <td><span class="pill pill-${c.resultado}">${ETIQUETA[c.resultado]}</span>${txtPallets(c) ? ` <small>${txtPallets(c)}</small>` : ''}</td>
       </tr>`).join('');
     return `<div class="r-scroll"><table class="r-table"><thead><tr><th>Hora</th><th>Producto</th><th>Lote</th><th>Línea</th><th>Resultado</th></tr></thead><tbody>${filas}</tbody></table></div>`;
   }
@@ -243,7 +247,7 @@ const Report = (() => {
     if (mags) lineas.push(`• Magnitud de los eventos: ${mags}`);
     x.eventos.forEach(e => {
       const r = e.relevancia || {};
-      lineas.push(`  – ${e.hora} ${e.tipo === 'final' ? 'Control final' : e.linea}${e.lote ? ' lote ' + e.lote : ''}: ${e.detalle || ''}${r.descripcion ? ' → ' + r.descripcion : ''}`);
+      lineas.push(`  – ${e.hora} ${e.tipo === 'final' ? 'Control final' : e.linea}${e.lote ? ' lote ' + e.lote : ''}${txtPallets(e) ? ' (' + txtPallets(e) + ')' : ''}: ${e.detalle || ''}${r.descripcion ? ' → ' + r.descripcion : ''}`);
     });
     if (x.cfg.checker) lineas.push(`Checker: ${x.cfg.checker}`);
     return lineas.join('\n');

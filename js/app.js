@@ -70,13 +70,14 @@
 
   function filaControl(c) {
     const info = [c.producto, c.lote && `Lote ${c.lote}`].filter(Boolean).map(esc).join(' · ');
+    const pal = c.resultado === 'parcial' && c.palletsNoOk ? ` · ${c.palletsNoOk} pallet${c.palletsNoOk === 1 ? '' : 's'} no OK` : '';
     const mag = c.relevancia?.magnitud ? ` · ${c.relevancia.magnitud} ${esc(c.relevancia.unidad || '')}` : '';
     return `
       <li>
         <button type="button" class="log-row" data-act="editar" data-id="${c.id}">
           <span class="log-time">${esc(c.hora)}</span>
           <span class="log-main"><strong>${esc(c.tipo === 'final' ? (c.linea ? 'Final · ' + c.linea : 'Control final') : c.linea)}</strong><small>${info || '—'}</small></span>
-          <span class="pill pill-${c.resultado}">${ESTADO_TXT[c.resultado]}${mag}</span>${c.excluir ? '<span class="pill pill-off" title="No se cuenta en el reporte">Fuera del reporte</span>' : ''}
+          <span class="pill pill-${c.resultado}">${ESTADO_TXT[c.resultado]}${pal}${mag}</span>${c.excluir ? '<span class="pill pill-off" title="No se cuenta en el reporte">Fuera del reporte</span>' : ''}
         </button>
       </li>`;
   }
@@ -264,6 +265,8 @@
             <label class="seg-opt seg-${v}"><input type="radio" name="resultado" value="${v}" ${c.resultado === v ? 'checked' : ''}><span>${t}</span></label>`).join('')}
         </fieldset>
 
+        <label id="wrapPallets" hidden>Cantidad de pallets no OK<input type="number" name="palletsNoOk" inputmode="numeric" min="1" step="1" value="${c.palletsNoOk ?? ''}"></label>
+
         <label id="wrapDetalle" hidden><span id="lblDetalle">Detalle</span><textarea name="detalle" rows="2">${esc(c.detalle || '')}</textarea></label>
 
         <fieldset class="rel" id="wrapRel" hidden>
@@ -380,6 +383,7 @@
       conforme: 'Observación (opcional)'
     }[res] || 'Detalle';
     $('#lblDetalle', form).textContent = lbl;
+    $('#wrapPallets', form).hidden = res !== 'parcial';
     $('#wrapDetalle', form).hidden = !res;
     $('#wrapRel', form).hidden = !evento;
     form.lote.closest('label').classList.toggle('dim', tipo === 'linea' && res === 'sin_produccion');
@@ -399,6 +403,8 @@
     if (!res) falta.push('elegí el resultado');
     if (res && res !== 'sin_produccion' && !form.lote.value.trim()) falta.push('cargá el lote');
     if (ES_EVENTO.includes(res) && !form.detalle.value.trim()) falta.push({ ajuste: 'describí qué se ajustó', no_conforme: 'describí qué no cumple', reprocesado: 'describí la falla y la corrección', parcial: 'indicá qué pallets no están OK' }[res]);
+    const pallets = Number(form.palletsNoOk.value);
+    if (res === 'parcial' && !(Number.isInteger(pallets) && pallets >= 1)) falta.push('indicá cuántos pallets no están OK');
     if (falta.length) { err.textContent = 'Para guardar: ' + falta.join(', ') + '.'; err.hidden = false; return; }
 
     const evento = ES_EVENTO.includes(res);
@@ -413,6 +419,7 @@
       hora: form.hora.value || Store.horaActual(),
       resultado: res,
       excluir: !form.incluir.checked,
+      palletsNoOk: res === 'parcial' ? pallets : null,
       detalle: form.detalle.value.trim(),
       relevancia: evento ? { descripcion: form.relDesc.value.trim(), magnitud: mag === '' ? null : Number(mag), unidad: form.relUni.value } : null
     };
